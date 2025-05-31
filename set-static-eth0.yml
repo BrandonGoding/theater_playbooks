@@ -1,18 +1,31 @@
-- name: Configure static IP for eth0
+- name: Configure static IP on eth0 using NetworkManager
   hosts: pis
   become: true
-  tasks:
-    - name: Configure eth0 with static IP
-      blockinfile:
-        path: /etc/dhcpcd.conf
-        marker: "# {mark} ANSIBLE MANAGED BLOCK eth0"
-        block: |
-          interface eth0
-          static ip_address={{ static_ip }}/24
-          static routers={{ static_router }}
-          static domain_name_servers={{ static_dns }}
+  vars:
+    static_router: 192.168.10.1
+    static_dns: 192.168.2.1
 
-    - name: Restart dhcpcd service
-      service:
-        name: dhcpcd
-        state: restarted
+  tasks:
+    - name: Check if eth0 connection profile exists
+      command: nmcli -t -f NAME con show
+      register: existing_connections
+      changed_when: false
+
+    - name: Create new connection profile for eth0 if missing
+      command: nmcli con add type ethernet ifname eth0 con-name eth0
+      when: "'eth0' not in existing_connections.stdout_lines"
+
+    - name: Set IP address and method together
+      command: >
+        nmcli con modify eth0
+        ipv4.addresses {{ static_ip }}/24
+        ipv4.method manual
+
+    - name: Set gateway
+      command: nmcli con modify eth0 ipv4.gateway {{ static_router }}
+
+    - name: Set DNS
+      command: nmcli con modify eth0 ipv4.dns {{ static_dns }}
+
+    - name: Bring connection up
+      command: nmcli con up eth0
