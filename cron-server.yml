@@ -1,0 +1,38 @@
+- name: Set up JSD_Monitor on script-server
+  hosts: script-server
+  become: true
+  vars:
+    project_dir: /home/{{ ansible_user }}/JSD_Monitor
+    repo_url: git@github.com:BrandonGoding/JSD_Monitor.git
+
+  tasks:
+    - name: Ensure git is installed
+      apt:
+        name: git
+        state: present
+
+    - name: Ensure python3-venv is installed
+      apt:
+        name: python3-venv
+        state: present
+
+    - name: Clone or update the repo
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ project_dir }}"
+        version: main
+        update: yes
+        force: yes
+        accept_hostkey: yes
+      become: false
+
+    - name: Create virtual environment if it doesn't exist
+      command: python3 -m venv .venv
+      args:
+        chdir: "{{ project_dir }}"
+        creates: "{{ project_dir }}/.venv"
+
+    - name: Install requirements into virtualenv
+      command: "{{ project_dir }}/.venv/bin/pip install -r requirements.txt"
+      args:
+        chdir: "{{ project_dir }}"
