@@ -7,6 +7,13 @@
         name: chrony
         state: present
 
+    - name: Configure upstream NTP servers
+      lineinfile:
+        path: /etc/chrony/chrony.conf
+        regexp: '^server '
+        line: 'server pool.ntp.org iburst'
+        insertafter: '^#.*pool'
+
     - name: Allow LAN clients to sync time
       blockinfile:
         path: /etc/chrony/chrony.conf
