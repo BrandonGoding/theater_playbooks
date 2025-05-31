@@ -1,0 +1,22 @@
+- name: Configure Raspberry Pi as Chrony NTP server
+  hosts: time-server
+  become: true
+  tasks:
+    - name: Install chrony
+      apt:
+        name: chrony
+        state: present
+
+    - name: Allow LAN clients to sync time
+      blockinfile:
+        path: /etc/chrony/chrony.conf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          allow 192.168.2.0/24
+          allow 192.168.10.0/24
+
+    - name: Ensure chrony is enabled and started
+      service:
+        name: chrony
+        state: started
+        enabled: yes

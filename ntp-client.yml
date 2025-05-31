@@ -1,0 +1,20 @@
+- name: Configure chrony to use local NTP server
+  hosts: pis:!time-server
+  become: true
+  tasks:
+    - name: Install chrony
+      apt:
+        name: chrony
+        state: present
+
+    - name: Replace existing time sources with internal NTP server
+      lineinfile:
+        path: /etc/chrony/chrony.conf
+        regexp: '^server'
+        line: 'server 192.168.2.10 iburst'  # TODO: Update to hostname
+        state: present
+
+    - name: Restart chrony
+      service:
+        name: chrony
+        state: restarted

@@ -1,0 +1,12 @@
+- name: Check chrony time sync across all Pis
+  hosts: all
+  become: true
+  tasks:
+    - name: Run chronyc tracking
+      command: chronyc tracking
+      register: tracking_output
+      changed_when: false
+
+    - name: Show tracking info
+      debug:
+        var: tracking_output.stdout_lines
