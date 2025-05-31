@@ -21,8 +21,8 @@
         ipv4.addresses {{ static_ip }}/24
         ipv4.method manual
 
-    - name: Set gateway
-      command: nmcli con modify eth0 ipv4.gateway {{ static_router }}
+    - name: Remove gateway from eth0 if it exists
+      command: nmcli con modify eth0 ipv4.gateway ""
 
     - name: Set DNS
       command: nmcli con modify eth0 ipv4.dns {{ static_dns }}
