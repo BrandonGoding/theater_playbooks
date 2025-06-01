@@ -1,0 +1,54 @@
+- name: Set up JSD_Monitor on script-server
+  hosts: script-server
+  become: true
+  vars:
+    project_dir: /home/{{ ansible_user }}/flashGrossesScript
+    repo_url: git@github.com:BrandonGoding/flashGrossesScript.git
+
+  tasks:
+    - name: Ensure git is installed
+      apt:
+        name: git
+        state: present
+
+    - name: Ensure python3-venv is installed
+      apt:
+        name: python3-venv
+        state: present
+
+    - name: Clone or update the repo
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ project_dir }}"
+        version: main
+        update: yes
+        force: yes
+        accept_hostkey: yes
+      become: false
+
+    - name: Create virtual environment if it doesn't exist
+      command: python3 -m venv .venv
+      args:
+        chdir: "{{ project_dir }}"
+        creates: "{{ project_dir }}/.venv"
+
+    - name: Install requirements into virtualenv
+      command: "{{ project_dir }}/.venv/bin/pip install -r requirements.txt"
+      args:
+        chdir: "{{ project_dir }}"
+
+    - name: Copy .env file to directory
+      copy:
+        src: /Users/{{ ansible_user }}/Desktop/squareTicketCounter/.env  # Replace with actual absolute path
+        dest: "/home/{{ ansible_user }}/flashGrossesScript/.env"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0600'
+
+    - name: Add cron job to run script nightly at 11 PM
+      cron:
+        name: "Run flashGrossesScript nightly"
+        user: "{{ ansible_user }}"
+        minute: "0"
+        hour: "23"
+        job: "/home/{{ ansible_user }}/flashGrossesScript/.venv/bin/python /home/{{ ansible_user }}/flashGrossesScript/main.py >> /home/{{ ansible_user }}/flashGrossesScript/log.txt 2>&1"
