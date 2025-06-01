@@ -36,3 +36,21 @@
       command: "{{ project_dir }}/.venv/bin/pip install -r requirements.txt"
       args:
         chdir: "{{ project_dir }}"
+
+    - name: Copy .env file to directory
+      copy:
+        src: /Users/{{ ansible_user }}/Desktop/JSD_Monitor/.env  # Replace with actual absolute path
+        dest: "/home/{{ ansible_user }}/JSD_Monitor/.env"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0600'
+
+    - name: Schedule cron job to run JSD_Monitor every minute
+      cron:
+        name: "Run JSD_Monitor script"
+        user: "{{ ansible_user }}"
+        minute: "*"
+        hour: "3-11"
+        job: "/home/{{ ansible_user }}/JSD_Monitor/.venv/bin/python /home/{{ ansible_user }}/JSD_Monitor/jsd_monitor.py"
+
+
