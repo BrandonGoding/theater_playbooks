@@ -1,0 +1,54 @@
+- name: Set up JSD_Monitor on script-server
+  hosts: proxy
+  become: true
+  vars:
+    project_dir: /home/{{ ansible_user }}/U6143_ssd1306
+    repo_url: git@github.com:BrandonGoding/U6143_ssd1306.git
+
+  tasks:
+    - name: Ensure git is installed
+      apt:
+        name: git
+        state: present
+
+    - name: Clone or update the repo
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ project_dir }}"
+        version: master
+        update: yes
+        force: yes
+        accept_hostkey: yes
+      become: false
+
+    - name: Make setup_display_service.sh executable
+      file:
+        path: "{{ project_dir }}/setup_display_service.sh"
+        mode: '0755'
+      become: false
+
+    - name: Check if systemd service file exists
+      stat:
+        path: /etc/systemd/system/uctronics-display.service
+      register: display_service
+
+    - name: Run setup_display_service.sh only if not already installed
+      command: ./setup_display_service.sh
+      args:
+        chdir: "{{ project_dir }}"
+      when: not display_service.stat.exists
+
+    - name: Check if uctronics-display service file exists
+      stat:
+        path: /etc/systemd/system/uctronics-display.service
+      register: display_service
+
+    - name: Enable and start uctronics-display service
+      systemd:
+        name: uctronics-display.service
+        enabled: true
+        state: started
+      when: display_service.stat.exists
+
+    - name: Enable I2C
+      shell: "raspi-config nonint do_i2c 0"
